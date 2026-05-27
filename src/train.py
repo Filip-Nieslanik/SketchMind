@@ -58,6 +58,12 @@ def train():
 
         print(f"Epoch {epoch + 1:2d}/{epochs}  loss: {avg_loss:.4f}  accuracy: {accuracy:.2f}%")
 
+    # save trained weights so we dont have to train again next time
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    model_path = os.path.join(MODEL_DIR, "model")
+    net.save(model_path)
+    print(f"\nModel saved to {model_path}.npz")
+
 
 if __name__ == "__main__":
     train()
