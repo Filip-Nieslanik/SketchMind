@@ -6,7 +6,7 @@ import os
 from network import NeuralNetwork
 
 
-DATASET_URL = "https://ossci-datasets.s3.amazonaws.com/mnist/"
+DATASET_URL = "http://yann.lecun.com/exdb/mnist/"
 DATA_DIR  = os.path.join(os.path.dirname(__file__), "..", "data")
 
 FILES = {
