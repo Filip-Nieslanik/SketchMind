@@ -25,3 +25,20 @@ class NeuralNetwork:
         # turn output numbers into probabilities (they all add up to 1)
         e = np.exp(z - np.max(z, axis=1, keepdims=True))
         return e / e.sum(axis=1, keepdims=True)
+
+    def forward(self, X):
+        # pass the input through every layer one by one
+        self.activations = [X]
+        self.zs = []
+
+        for i in range(len(self.weights)):
+            z = self.activations[i] @ self.weights[i] + self.biases[i]
+            self.zs.append(z)
+
+            # hidden layers use relu, last layer uses softmax
+            if i < len(self.weights) - 1:
+                self.activations.append(self.relu(z))
+            else:
+                self.activations.append(self.softmax(z))
+
+        return self.activations[-1]
