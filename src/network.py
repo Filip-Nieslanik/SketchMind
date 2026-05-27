@@ -42,3 +42,24 @@ class NeuralNetwork:
                 self.activations.append(self.softmax(z))
 
         return self.activations[-1]
+
+    def loss(self, y_pred, y_true):
+        # measures how wrong the prediction is, lower is better
+        n = y_true.shape[0]
+        correct_probs = y_pred[range(n), y_true]
+        return -np.log(correct_probs + 1e-8).mean()
+
+    def backward(self, y_true, lr):
+        # figure out how wrong each weight was and fix it a little bit
+        n = y_true.shape[0]
+        grad = self.activations[-1].copy()
+        grad[range(n), y_true] -= 1
+        grad /= n
+
+        for i in reversed(range(len(self.weights))):
+            dw = self.activations[i].T @ grad
+            db = grad.sum(axis=0, keepdims=True)
+            if i > 0:
+                grad = grad @ self.weights[i].T * self.relu_deriv(self.zs[i - 1])
+            self.weights[i] -= lr * dw
+            self.biases[i] -= lr * db
