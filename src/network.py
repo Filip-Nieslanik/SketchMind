@@ -63,3 +63,8 @@ class NeuralNetwork:
                 grad = grad @ self.weights[i].T * self.relu_deriv(self.zs[i - 1])
             self.weights[i] -= lr * dw
             self.biases[i] -= lr * db
+
+    def predict(self, X):
+        # run forward pass and pick the digit with highest probability
+        probs = self.forward(X)
+        return np.argmax(probs, axis=1), probs
