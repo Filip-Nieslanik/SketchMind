@@ -68,3 +68,22 @@ class NeuralNetwork:
         # run forward pass and pick the digit with highest probability
         probs = self.forward(X)
         return np.argmax(probs, axis=1), probs
+
+    def save(self, path):
+        # save weights and biases to a file so we dont have to retrain every time
+        data = {}
+        for i in range(len(self.weights)):
+            data[f"w{i}"] = self.weights[i]
+            data[f"b{i}"] = self.biases[i]
+        np.savez(path, **data)
+
+    def load(self, path):
+        # load weights and biases from a previously saved file
+        data = np.load(path)
+        self.weights = []
+        self.biases = []
+        i = 0
+        while f"w{i}" in data:
+            self.weights.append(data[f"w{i}"])
+            self.biases.append(data[f"b{i}"])
+            i += 1
