@@ -1,6 +1,5 @@
 import numpy as np
 
-
 class NeuralNetwork:
     def __init__(self, layer_sizes):
         # layer_sizes is a list like [784, 128, 64, 10]
