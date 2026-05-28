@@ -2,17 +2,15 @@
 
 School project — draw a digit (0-9) and a neural network tries to figure out what it is.
 
-Built it without any ML libraries, just NumPy. Trained on MNIST.
+Neural network written from scratch in NumPy, trained on MNIST.
 You can draw with mouse or use webcam and draw with your finger.
 
 ---
 
 ## How it works
 
-I wrote the neural network from scratch in NumPy — no PyTorch, no TensorFlow.
-Trained it on MNIST (60k handwritten digits). Gets around 97% accuracy.
-
-Network layers: 784 -> 128 -> 64 -> 10
+The network has 4 layers: 784 -> 128 -> 64 -> 10.
+Trained on 60k handwritten digits, gets around 97% accuracy on the test set.
 
 ---
 
