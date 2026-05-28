@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw, ImageTk
 from network import NeuralNetwork
 from camera import FingerTracker
 
-CANVAS_SIZE = 480  # bigger canvas so camera looks decent
+CANVAS_SIZE = 560 # Increase this for better camera resolution - might affect performance
 MODEL_PATH  = os.path.join(os.path.dirname(__file__), "..", "model", "model.npz")
 
 class App:
@@ -150,12 +150,13 @@ class App:
         frame, pos, drawing = self.tracker.get_finger_pos()
 
         if frame is not None:
-            # convert camera frame to tkinter image and show it on canvas
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img       = Image.fromarray(frame_rgb).resize((CANVAS_SIZE, CANVAS_SIZE))
 
-            # blend camera image with drawn strokes
-            img.paste(self.image, mask=self.image)
+            # draw strokes on top of camera frame
+            # self.image is grayscale mask of what was drawn
+            colored_strokes = Image.new("RGB", (CANVAS_SIZE, CANVAS_SIZE), (255, 255, 255))
+            img.paste(colored_strokes, mask=self.image)
 
             self.tk_img = ImageTk.PhotoImage(img)
             self.canvas.create_image(0, 0, anchor="nw", image=self.tk_img)
