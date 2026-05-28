@@ -4,7 +4,6 @@ import os
 from PIL import Image, ImageDraw
 from network import NeuralNetwork
 
-
 CANVAS_SIZE = 280
 MODEL_PATH  = os.path.join(os.path.dirname(__file__), "..", "model", "model.npz")
 
@@ -62,11 +61,39 @@ class App:
         )
         self.confidence_label.pack(pady=(0, 20))
 
+        # bar chart for each digit 0-9
+        tk.Label(panel, text="Probabilities", font=("Arial", 11, "bold"),
+                 bg="#1e1e1e", fg="white").pack(pady=(10, 4))
+
+        self.bars = []
+        self.bar_labels = []
+
+        for digit in range(10):
+            row = tk.Frame(panel, bg="#1e1e1e")
+            row.pack(fill="x", pady=1)
+
+            tk.Label(row, text=str(digit), width=2, bg="#1e1e1e",
+                     fg="white", font=("Arial", 10)).pack(side="left")
+
+            bar_bg = tk.Frame(row, bg="#333333", height=14, width=180)
+            bar_bg.pack(side="left", padx=4)
+            bar_bg.pack_propagate(False)
+
+            bar = tk.Frame(bar_bg, bg="#00ff88", height=14, width=0)
+            bar.place(x=0, y=0, relheight=1)
+
+            pct = tk.Label(row, text="0%", width=4, bg="#1e1e1e",
+                           fg="#aaaaaa", font=("Arial", 9))
+            pct.pack(side="left")
+
+            self.bars.append(bar)
+            self.bar_labels.append(pct)
+
         tk.Button(
             panel, text="Clear", font=("Arial", 12),
             command=self.clear, bg="#444444", fg="white",
             relief="flat", padx=10, pady=5
-        ).pack()
+        ).pack(pady=15)
 
     def on_release(self, event):
         # resize drawing to 28x28 and run it through the network
@@ -81,10 +108,23 @@ class App:
         self.prediction_label.config(text=str(digit))
         self.confidence_label.config(text=f"{confidence:.1f}% sure")
 
+        for i in range(10):
+            prob      = probs[0][i]
+            bar_width = int(prob * 180)
+            color     = "#00ff88" if i == digit else "#446644"
+            self.bars[i].place(x=0, y=0, relheight=1, width=bar_width)
+            self.bars[i].config(bg=color)
+            self.bar_labels[i].config(text=f"{prob*100:.0f}%")
+
     def clear(self):
         self.canvas.delete("all")
         self.image  = Image.new("L", (CANVAS_SIZE, CANVAS_SIZE), color=0)
         self.drawer = ImageDraw.Draw(self.image)
+        self.prediction_label.config(text="?")
+        self.confidence_label.config(text="draw something")
+        for i in range(10):
+            self.bars[i].place(x=0, y=0, relheight=1, width=0)
+            self.bar_labels[i].config(text="0%")
 
 if __name__ == "__main__":
     root = tk.Tk()
