@@ -68,3 +68,24 @@ class NeuralNetwork:
                 grad = grad @ self.weights[i].T * self.relu_deriv(self.zs[i - 1])
             self.weights[i] -= lr * dw
             self.biases[i] -= lr * db
+
+    def predict(self, X):
+        probs = self.forward(X)
+        return np.argmax(probs, axis=1), probs
+
+    def save(self, path):
+        data = {}
+        for i in range(len(self.weights)):
+            data[f"w{i}"] = self.weights[i]
+            data[f"b{i}"] = self.biases[i]
+        np.savez(path, **data)
+
+    def load(self, path):
+        data = np.load(path)
+        self.weights = []
+        self.biases = []
+        i = 0
+        while f"w{i}" in data:
+            self.weights.append(data[f"w{i}"])
+            self.biases.append(data[f"b{i}"])
+            i += 1
