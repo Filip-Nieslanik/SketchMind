@@ -19,22 +19,20 @@ class NeuralNetwork:
             self.biases.append(b)
 
     def relu(self, z):
-        # negative values become 0, positive stay the same
+        # if negative set to 0
         return np.maximum(0, z)
 
     def relu_deriv(self, z):
-        # 1 where neuron was active, 0 where it was off
         return (z > 0).astype(float)
 
     def softmax(self, z):
-        # turns raw numbers into probabilities that add up to 1
-        # e.g. [2.1, 0.3, 5.0] -> [0.05, 0.01, 0.94]
+        # convert numbers to probabilities, all sum to 1
         e = np.exp(z - np.max(z, axis=1, keepdims=True))
         return e / e.sum(axis=1, keepdims=True)
 
     def forward(self, X):
-        # pass input through every layer and remember each step
-        # we need the remembered steps later for backprop
+        # go through each layer one by one
+        # save everything so backward pass can use it later
         self.activations = [X]
         self.zs = []
 
