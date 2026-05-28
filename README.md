@@ -1,54 +1,50 @@
 # SketchMind
 
-A digit recognition app where you draw a number (0-9) on a canvas and a neural network guesses what it is in real time.
+School project — draw a digit (0-9) and a neural network tries to figure out what it is.
 
-You can draw with your mouse or use your webcam — the app tracks your index finger and lets you draw in the air.
+Built it without any ML libraries, just NumPy. Trained on MNIST.
+You can draw with mouse or use webcam and draw with your finger.
 
 ---
 
 ## How it works
 
-The neural network is built from scratch using only NumPy — no PyTorch, no TensorFlow.
-It was trained on the MNIST dataset (60,000 handwritten digit images).
+I wrote the neural network from scratch in NumPy — no PyTorch, no TensorFlow.
+Trained it on MNIST (60k handwritten digits). Gets around 97% accuracy.
 
-Architecture: 784 inputs -> 128 -> 64 -> 10 outputs  
-Training accuracy: ~97%
+Network layers: 784 -> 128 -> 64 -> 10
 
 ---
 
-## Project structure
+## Files
 
 ```
 src/
-  network.py   - neural network (forward pass, backprop, save/load)
+  network.py   - the neural network (forward, backprop, save/load)
   train.py     - downloads MNIST and trains the model
-  app.py       - main GUI application
-  camera.py    - webcam finger tracking using MediaPipe
+  app.py       - the drawing app
+  camera.py    - webcam + finger tracking (MediaPipe)
 
 tests/
-  test_network.py  - unit tests for the network
-  test_train.py    - unit tests for data loading
-
-model/           - saved model weights (ignored by git)
-data/            - MNIST dataset files (ignored by git)
+  test_network.py  - tests for the network
+  test_train.py    - tests for data loading
 ```
 
 ---
 
-## Setup
+## How to run
 
+Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-Train the model first (downloads MNIST automatically):
-
+Train the model (downloads MNIST on first run):
 ```bash
 python src/train.py
 ```
 
-Then run the app:
-
+Run the app:
 ```bash
 python src/app.py
 ```
@@ -57,9 +53,7 @@ python src/app.py
 
 ## Camera mode
 
-Click **Use Camera** to switch to webcam drawing.
+Click **Use Camera** and draw with your index finger.
+Raise your middle finger too if you just want to move without drawing.
 
-- point your **index finger up** to draw
-- raise your **middle finger** too to pause drawing (just moving)
-
-The canvas clears automatically after 2 seconds of no drawing.
+Canvas clears itself after 2 seconds of no drawing.
