@@ -49,3 +49,44 @@ def load_dataset():
     X_test  = load_images(FILES["test_images"])
     y_test  = load_labels(FILES["test_labels"])
     return X_train, y_train, X_test, y_test
+
+
+def train():
+    X_train, y_train, X_test, y_test = load_dataset()
+
+    print(f"Training images: {len(X_train)}")
+    print(f"Test images:     {len(X_test)}")
+
+    net = NeuralNetwork([784, 128, 64, 10])
+
+    epochs     = 20
+    lr         = 0.01
+    batch_size = 64
+
+    print("\nStarting training...\n")
+
+    for epoch in range(epochs):
+        # shuffle so the network doesnt learn the order
+        indices = np.random.permutation(len(X_train))
+        X_train = X_train[indices]
+        y_train = y_train[indices]
+
+        total_loss = 0
+
+        for start in range(0, len(X_train), batch_size):
+            X_batch = X_train[start : start + batch_size]
+            y_batch = y_train[start : start + batch_size]
+
+            y_pred      = net.forward(X_batch)
+            total_loss += net.loss(y_pred, y_batch)
+            net.backward(y_batch, lr)
+
+        preds, _  = net.predict(X_test)
+        accuracy  = (preds == y_test).mean() * 100
+        avg_loss  = total_loss / (len(X_train) / batch_size)
+
+        print(f"Epoch {epoch + 1:2d}/{epochs}  loss: {avg_loss:.4f}  accuracy: {accuracy:.2f}%")
+
+
+if __name__ == "__main__":
+    train()
