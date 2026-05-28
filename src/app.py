@@ -1,6 +1,7 @@
 import tkinter as tk
 import numpy as np
 import os
+import cv2
 from PIL import Image, ImageDraw
 from network import NeuralNetwork
 from camera import FingerTracker
@@ -138,9 +139,7 @@ class App:
             self.camera_btn.config(text="Stop Camera", bg="#cc4444")
             self.update_camera()
         else:
-            if self.tracker:
-                self.tracker.release()
-                self.tracker = None
+            self.stop_camera()
             self.camera_btn.config(text="Use Camera", bg="#444444")
             self.prev_pos = None
 
@@ -148,30 +147,37 @@ class App:
         if not self.camera_mode:
             return
 
-        frame, pos = self.tracker.get_finger_pos()
+        frame, pos, drawing = self.tracker.get_finger_pos()
+
+        # show camera preview in a separate window
+        if frame is not None:
+            cv2.imshow("Camera", frame)
+            cv2.waitKey(1)
 
         if pos is not None:
-            # scale finger position from camera size to canvas size
             cam_w = frame.shape[1]
             cam_h = frame.shape[0]
             x = int(pos[0] / cam_w * CANVAS_SIZE)
             y = int(pos[1] / cam_h * CANVAS_SIZE)
 
-            # draw line from previous position to current
-            if self.prev_pos is not None:
+            # only draw when index finger is up (drawing gesture)
+            if drawing and self.prev_pos is not None:
                 r = 12
                 self.canvas.create_oval(x-r, y-r, x+r, y+r, fill="white", outline="white")
                 self.drawer.ellipse([x-r, y-r, x+r, y+r], fill=255)
+                self.run_prediction()
 
-            self.prev_pos = (x, y)
+            self.prev_pos = (x, y) if drawing else None
         else:
-            # no finger detected, run prediction on what was drawn
-            if self.prev_pos is not None:
-                self.on_release(None)
             self.prev_pos = None
 
-        # check again after 30ms
         self.root.after(30, self.update_camera)
+
+    def stop_camera(self):
+        if self.tracker:
+            self.tracker.release()
+            self.tracker = None
+        cv2.destroyAllWindows()
 
     def clear(self):
         self.canvas.delete("all")
