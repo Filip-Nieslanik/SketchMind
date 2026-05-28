@@ -3,6 +3,7 @@ import numpy as np
 import os
 from PIL import Image, ImageDraw
 from network import NeuralNetwork
+from camera import FingerTracker
 
 CANVAS_SIZE = 280
 MODEL_PATH  = os.path.join(os.path.dirname(__file__), "..", "model", "model.npz")
@@ -13,12 +14,16 @@ class App:
         self.root.title("SketchMind")
         self.root.configure(bg="#1e1e1e")
 
-        # PIL image stores what is drawn so we can resize it to 28x28 later
         self.net = NeuralNetwork([784, 128, 64, 10])
         self.net.load(MODEL_PATH)
 
-        self.image  = Image.new("L", (CANVAS_SIZE, CANVAS_SIZE), color=0)
-        self.drawer = ImageDraw.Draw(self.image)
+        self.image   = Image.new("L", (CANVAS_SIZE, CANVAS_SIZE), color=0)
+        self.drawer  = ImageDraw.Draw(self.image)
+
+        # camera mode off by default
+        self.camera_mode = False
+        self.tracker     = None
+        self.prev_pos    = None
 
         self.setup_canvas()
         self.setup_panel()
@@ -89,11 +94,18 @@ class App:
             self.bars.append(bar)
             self.bar_labels.append(pct)
 
+        self.camera_btn = tk.Button(
+            panel, text="Use Camera", font=("Arial", 12),
+            command=self.toggle_camera, bg="#444444", fg="white",
+            relief="flat", padx=10, pady=5
+        )
+        self.camera_btn.pack(pady=(15, 5))
+
         tk.Button(
             panel, text="Clear", font=("Arial", 12),
             command=self.clear, bg="#444444", fg="white",
             relief="flat", padx=10, pady=5
-        ).pack(pady=15)
+        ).pack()
 
     def on_release(self, event):
         # resize drawing to 28x28 and run it through the network
@@ -115,6 +127,48 @@ class App:
             self.bars[i].place(x=0, y=0, relheight=1, width=bar_width)
             self.bars[i].config(bg=color)
             self.bar_labels[i].config(text=f"{prob*100:.0f}%")
+
+    def toggle_camera(self):
+        self.camera_mode = not self.camera_mode
+        if self.camera_mode:
+            self.tracker = FingerTracker()
+            self.camera_btn.config(text="Stop Camera", bg="#cc4444")
+            self.update_camera()
+        else:
+            if self.tracker:
+                self.tracker.release()
+                self.tracker = None
+            self.camera_btn.config(text="Use Camera", bg="#444444")
+            self.prev_pos = None
+
+    def update_camera(self):
+        if not self.camera_mode:
+            return
+
+        frame, pos = self.tracker.get_finger_pos()
+
+        if pos is not None:
+            # scale finger position from camera size to canvas size
+            cam_w = frame.shape[1]
+            cam_h = frame.shape[0]
+            x = int(pos[0] / cam_w * CANVAS_SIZE)
+            y = int(pos[1] / cam_h * CANVAS_SIZE)
+
+            # draw line from previous position to current
+            if self.prev_pos is not None:
+                r = 12
+                self.canvas.create_oval(x-r, y-r, x+r, y+r, fill="white", outline="white")
+                self.drawer.ellipse([x-r, y-r, x+r, y+r], fill=255)
+
+            self.prev_pos = (x, y)
+        else:
+            # no finger detected, run prediction on what was drawn
+            if self.prev_pos is not None:
+                self.on_release(None)
+            self.prev_pos = None
+
+        # check again after 30ms
+        self.root.after(30, self.update_camera)
 
     def clear(self):
         self.canvas.delete("all")
