@@ -204,6 +204,9 @@ class App:
 
             if drawing and self.prev_pos is not None:
                 r = 12
+                px, py = self.prev_pos
+                # draw a line between previous and current position so strokes are not dotted
+                self.drawer.line([px, py, x, y], fill=255, width=r * 2)
                 self.drawer.ellipse([x-r, y-r, x+r, y+r], fill=255)
                 self.run_prediction()
                 self.schedule_clear()
