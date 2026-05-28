@@ -31,3 +31,20 @@ class NeuralNetwork:
         # e.g. [2.1, 0.3, 5.0] -> [0.05, 0.01, 0.94]
         e = np.exp(z - np.max(z, axis=1, keepdims=True))
         return e / e.sum(axis=1, keepdims=True)
+
+    def forward(self, X):
+        # pass input through every layer and remember each step
+        # we need the remembered steps later for backprop
+        self.activations = [X]
+        self.zs = []
+
+        for i in range(len(self.weights)):
+            z = self.activations[i] @ self.weights[i] + self.biases[i]
+            self.zs.append(z)
+
+            if i < len(self.weights) - 1:
+                self.activations.append(self.relu(z))
+            else:
+                self.activations.append(self.softmax(z))
+
+        return self.activations[-1]
