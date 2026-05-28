@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw, ImageTk
 from network import NeuralNetwork
 from camera import FingerTracker
 
-CANVAS_SIZE = 280
+CANVAS_SIZE = 480  # bigger canvas so camera looks decent
 MODEL_PATH  = os.path.join(os.path.dirname(__file__), "..", "model", "model.npz")
 
 class App:
