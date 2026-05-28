@@ -22,9 +22,10 @@ class App:
         self.drawer  = ImageDraw.Draw(self.image)
 
         # camera mode off by default
-        self.camera_mode = False
-        self.tracker     = None
-        self.prev_pos    = None
+        self.camera_mode  = False
+        self.tracker      = None
+        self.prev_pos     = None
+        self.clear_timer  = None  # auto-clear timer
 
         self.setup_canvas()
         self.setup_panel()
@@ -136,6 +137,13 @@ class App:
         offset_y = (200 - new_h) // 2
         result.paste(cropped, (offset_x, offset_y))
         return result
+
+    def schedule_clear(self):
+        # cancel previous timer if user is still drawing
+        if self.clear_timer:
+            self.root.after_cancel(self.clear_timer)
+        # clear canvas after 2 seconds of no drawing
+        self.clear_timer = self.root.after(2000, self.clear)
 
     def run_prediction(self):
         centered = self.center_image(self.image)
