@@ -49,6 +49,7 @@ class App:
         self.canvas.create_oval(x-r, y-r, x+r, y+r, fill="white", outline="white")
         self.drawer.ellipse([x-r, y-r, x+r, y+r], fill=255)
         self.run_prediction()  # predict while drawing, not just after
+        self.schedule_clear()
 
     def setup_panel(self):
         panel = tk.Frame(self.root, bg="#1e1e1e")
@@ -205,6 +206,7 @@ class App:
                 r = 12
                 self.drawer.ellipse([x-r, y-r, x+r, y+r], fill=255)
                 self.run_prediction()
+                self.schedule_clear()
 
             self.prev_pos = (x, y) if drawing else None
         else:
