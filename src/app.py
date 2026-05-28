@@ -2,7 +2,7 @@ import tkinter as tk
 import numpy as np
 import os
 import cv2
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageTk
 from network import NeuralNetwork
 from camera import FingerTracker
 
@@ -149,10 +149,16 @@ class App:
 
         frame, pos, drawing = self.tracker.get_finger_pos()
 
-        # show camera preview in a separate window
         if frame is not None:
-            cv2.imshow("Camera", frame)
-            cv2.waitKey(1)
+            # convert camera frame to tkinter image and show it on canvas
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img       = Image.fromarray(frame_rgb).resize((CANVAS_SIZE, CANVAS_SIZE))
+
+            # blend camera image with drawn strokes
+            img.paste(self.image, mask=self.image)
+
+            self.tk_img = ImageTk.PhotoImage(img)
+            self.canvas.create_image(0, 0, anchor="nw", image=self.tk_img)
 
         if pos is not None:
             cam_w = frame.shape[1]
@@ -160,10 +166,8 @@ class App:
             x = int(pos[0] / cam_w * CANVAS_SIZE)
             y = int(pos[1] / cam_h * CANVAS_SIZE)
 
-            # only draw when index finger is up (drawing gesture)
             if drawing and self.prev_pos is not None:
                 r = 12
-                self.canvas.create_oval(x-r, y-r, x+r, y+r, fill="white", outline="white")
                 self.drawer.ellipse([x-r, y-r, x+r, y+r], fill=255)
                 self.run_prediction()
 
@@ -177,7 +181,8 @@ class App:
         if self.tracker:
             self.tracker.release()
             self.tracker = None
-        cv2.destroyAllWindows()
+        # go back to plain black canvas
+        self.canvas.delete("all")
 
     def clear(self):
         self.canvas.delete("all")
