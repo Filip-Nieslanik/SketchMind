@@ -112,10 +112,36 @@ class App:
     def on_release(self, event):
         self.run_prediction()
 
+    def center_image(self, img):
+        # crop empty borders and center the digit like MNIST does
+        pixels = np.array(img)
+        rows   = np.any(pixels > 0, axis=1)
+        cols   = np.any(pixels > 0, axis=0)
+
+        if not rows.any():
+            return img  # nothing drawn yet
+
+        top, bottom = np.where(rows)[0][[0, -1]]
+        left, right = np.where(cols)[0][[0, -1]]
+
+        cropped = img.crop((left, top, right + 1, bottom + 1))
+
+        # paste into a square with some padding
+        result = Image.new("L", (200, 200), 0)
+        scale  = min(160 / cropped.width, 160 / cropped.height)
+        new_w  = int(cropped.width * scale)
+        new_h  = int(cropped.height * scale)
+        cropped = cropped.resize((new_w, new_h), Image.LANCZOS)
+        offset_x = (200 - new_w) // 2
+        offset_y = (200 - new_h) // 2
+        result.paste(cropped, (offset_x, offset_y))
+        return result
+
     def run_prediction(self):
-        small  = self.image.resize((28, 28), Image.LANCZOS)
-        pixels = np.array(small).flatten() / 255.0
-        pixels = pixels.reshape(1, 784)
+        centered = self.center_image(self.image)
+        small    = centered.resize((28, 28), Image.LANCZOS)
+        pixels   = np.array(small).flatten() / 255.0
+        pixels   = pixels.reshape(1, 784)
 
         digit, probs = self.net.predict(pixels)
         digit      = digit[0]
