@@ -46,6 +46,7 @@ class App:
         x, y = event.x, event.y
         self.canvas.create_oval(x-r, y-r, x+r, y+r, fill="white", outline="white")
         self.drawer.ellipse([x-r, y-r, x+r, y+r], fill=255)
+        self.run_prediction()  # predict while drawing, not just after
 
     def setup_panel(self):
         panel = tk.Frame(self.root, bg="#1e1e1e")
@@ -108,7 +109,9 @@ class App:
         ).pack()
 
     def on_release(self, event):
-        # resize drawing to 28x28 and run it through the network
+        self.run_prediction()
+
+    def run_prediction(self):
         small  = self.image.resize((28, 28), Image.LANCZOS)
         pixels = np.array(small).flatten() / 255.0
         pixels = pixels.reshape(1, 784)

@@ -2,41 +2,55 @@ import cv2
 import mediapipe as mp
 
 
-INDEX_TIP = 8  # mediapipe landmark index for index finger tip
+INDEX_TIP = 8  # index finger tip landmark
 
 
 class FingerTracker:
     def __init__(self):
-        self.cap   = cv2.VideoCapture(0)
-        self.hands = mp.solutions.hands.Hands(
-            max_num_hands=1,
-            min_detection_confidence=0.7,
-            min_tracking_confidence=0.7
-        )
+        self.cap = cv2.VideoCapture(0)
 
-        # smooth out finger position over last few frames
+        # new mediapipe API (0.10+)
+        self.detector = mp.tasks.vision.HandLandmarker
+        base_options  = mp.tasks.BaseOptions(
+            model_asset_path=self._get_model_path()
+        )
+        options = mp.tasks.vision.HandLandmarkerOptions(
+            base_options=base_options,
+            num_hands=1
+        )
+        self.hands = mp.tasks.vision.HandLandmarker.create_from_options(options)
+
         self.history = []
+
+    def _get_model_path(self):
+        import urllib.request, os
+        path = os.path.join(os.path.dirname(__file__), "hand_landmarker.task")
+        if not os.path.exists(path):
+            print("Downloading hand landmark model...")
+            urllib.request.urlretrieve(
+                "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+                path
+            )
+        return path
 
     def get_finger_pos(self):
         success, frame = self.cap.read()
         if not success:
             return None, None
 
-        frame = cv2.flip(frame, 1)  # mirror so it feels natural
-        rgb   = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        result = self.hands.process(rgb)
+        frame  = cv2.flip(frame, 1)
+        rgb    = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        mp_img = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+        result = self.hands.detect(mp_img)
 
-        if not result.multi_hand_landmarks:
+        if not result.hand_landmarks:
             return frame, None
 
-        hand = result.multi_hand_landmarks[0]
-        tip  = hand.landmark[INDEX_TIP]
-
+        tip = result.hand_landmarks[0][INDEX_TIP]
         h, w, _ = frame.shape
         x = int(tip.x * w)
         y = int(tip.y * h)
 
-        # average last 5 positions so line doesnt shake
         self.history.append((x, y))
         if len(self.history) > 5:
             self.history.pop(0)
