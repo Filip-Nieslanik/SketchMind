@@ -17,3 +17,17 @@ class NeuralNetwork:
             b = np.zeros((1, layer_sizes[i + 1]))
             self.weights.append(w)
             self.biases.append(b)
+
+    def relu(self, z):
+        # negative values become 0, positive stay the same
+        return np.maximum(0, z)
+
+    def relu_deriv(self, z):
+        # 1 where neuron was active, 0 where it was off
+        return (z > 0).astype(float)
+
+    def softmax(self, z):
+        # turns raw numbers into probabilities that add up to 1
+        # e.g. [2.1, 0.3, 5.0] -> [0.05, 0.01, 0.94]
+        e = np.exp(z - np.max(z, axis=1, keepdims=True))
+        return e / e.sum(axis=1, keepdims=True)
