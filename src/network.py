@@ -1,10 +1,13 @@
 import numpy as np
 
-
 class NeuralNetwork:
     def __init__(self, layer_sizes):
-        # layer_sizes tells us how big each layer is
-        # example: [784, 128, 64, 10]
+        # layer_sizes is a list like [784, 128, 64, 10]
+        # 784 = pixels in one image (28x28)
+        # 128 and 64 = hidden layers
+        # 10 = one output per digit (0-9)
+
+        self.layer_sizes = layer_sizes
         self.weights = []
         self.biases = []
 
@@ -15,19 +18,20 @@ class NeuralNetwork:
             self.biases.append(b)
 
     def relu(self, z):
-        # negative values become 0, positive stay the same
+        # if negative set to 0
         return np.maximum(0, z)
 
     def relu_deriv(self, z):
         return (z > 0).astype(float)
 
     def softmax(self, z):
-        # turn output numbers into probabilities (they all add up to 1)
+        # convert numbers to probabilities, all sum to 1
         e = np.exp(z - np.max(z, axis=1, keepdims=True))
         return e / e.sum(axis=1, keepdims=True)
 
     def forward(self, X):
-        # pass the input through every layer one by one
+        # go through each layer one by one
+        # save everything so backward pass can use it later
         self.activations = [X]
         self.zs = []
 
@@ -35,7 +39,6 @@ class NeuralNetwork:
             z = self.activations[i] @ self.weights[i] + self.biases[i]
             self.zs.append(z)
 
-            # hidden layers use relu, last layer uses softmax
             if i < len(self.weights) - 1:
                 self.activations.append(self.relu(z))
             else:
@@ -44,13 +47,14 @@ class NeuralNetwork:
         return self.activations[-1]
 
     def loss(self, y_pred, y_true):
-        # measures how wrong the prediction is, lower is better
+        # how wrong was the prediction, lower is better
         n = y_true.shape[0]
-        correct_probs = y_pred[range(n), y_true]
-        return -np.log(correct_probs + 1e-8).mean()
+        correct = y_pred[range(n), y_true]
+        return -np.log(correct + 1e-8).mean()
 
     def backward(self, y_true, lr):
-        # figure out how wrong each weight was and fix it a little bit
+        # figure out how much each weight was responsible for the error
+        # then nudge it in the right direction
         n = y_true.shape[0]
         grad = self.activations[-1].copy()
         grad[range(n), y_true] -= 1
@@ -65,12 +69,10 @@ class NeuralNetwork:
             self.biases[i] -= lr * db
 
     def predict(self, X):
-        # run forward pass and pick the digit with highest probability
         probs = self.forward(X)
         return np.argmax(probs, axis=1), probs
 
     def save(self, path):
-        # save weights and biases to a file so we dont have to retrain every time
         data = {}
         for i in range(len(self.weights)):
             data[f"w{i}"] = self.weights[i]
@@ -78,7 +80,6 @@ class NeuralNetwork:
         np.savez(path, **data)
 
     def load(self, path):
-        # load weights and biases from a previously saved file
         data = np.load(path)
         self.weights = []
         self.biases = []
