@@ -225,6 +225,7 @@ class App:
         self.canvas.delete("all")
         self.image  = Image.new("L", (CANVAS_SIZE, CANVAS_SIZE), color=0)
         self.drawer = ImageDraw.Draw(self.image)
+        self.clear_timer = None
         self.prediction_label.config(text="?")
         self.confidence_label.config(text="draw something")
         for i in range(10):
