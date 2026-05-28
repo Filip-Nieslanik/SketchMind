@@ -1,5 +1,6 @@
 data/
 model/
+docs/
 __pycache__/
 *.pyc
 src/*.task
