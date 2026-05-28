@@ -1,7 +1,12 @@
 import tkinter as tk
+import numpy as np
+import os
 from PIL import Image, ImageDraw
+from network import NeuralNetwork
+
 
 CANVAS_SIZE = 280
+MODEL_PATH  = os.path.join(os.path.dirname(__file__), "..", "model", "model.npz")
 
 class App:
     def __init__(self, root):
@@ -10,6 +15,9 @@ class App:
         self.root.configure(bg="#1e1e1e")
 
         # PIL image stores what is drawn so we can resize it to 28x28 later
+        self.net = NeuralNetwork([784, 128, 64, 10])
+        self.net.load(MODEL_PATH)
+
         self.image  = Image.new("L", (CANVAS_SIZE, CANVAS_SIZE), color=0)
         self.drawer = ImageDraw.Draw(self.image)
 
@@ -61,7 +69,17 @@ class App:
         ).pack()
 
     def on_release(self, event):
-        pass
+        # resize drawing to 28x28 and run it through the network
+        small  = self.image.resize((28, 28), Image.LANCZOS)
+        pixels = np.array(small).flatten() / 255.0
+        pixels = pixels.reshape(1, 784)
+
+        digit, probs = self.net.predict(pixels)
+        digit      = digit[0]
+        confidence = probs[0][digit] * 100
+
+        self.prediction_label.config(text=str(digit))
+        self.confidence_label.config(text=f"{confidence:.1f}% sure")
 
     def clear(self):
         self.canvas.delete("all")
