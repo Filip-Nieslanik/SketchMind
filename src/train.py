@@ -29,16 +29,16 @@ def download_dataset():
 def load_images(filename):
     path = os.path.join(DATA_DIR, filename)
     with gzip.open(path) as f:
-        f.read(16)  # skip file header
+        f.read(16)  # first 16 bytes are header info I don't need
         data = np.frombuffer(f.read(), dtype=np.uint8)
-    images = data.reshape(-1, 784)  # 28x28 = 784 pixels per image
-    images = images / 255.0         # scale to 0-1
+    images = data.reshape(-1, 784)  # each image is 28x28 = 784 pixels
+    images = images / 255.0         # I scale to 0-1 since the network works better that way
     return images
 
 def load_labels(filename):
     path = os.path.join(DATA_DIR, filename)
     with gzip.open(path) as f:
-        f.read(8)  # skip file header
+        f.read(8)  # skip header
         labels = np.frombuffer(f.read(), dtype=np.uint8)
     return labels
 
@@ -66,7 +66,7 @@ def train():
     print("\nStarting training...\n")
 
     for epoch in range(epochs):
-        # shuffle so the network doesnt learn the order
+        # shuffle every epoch so the network doesn't just memorize the order
         indices = np.random.permutation(len(X_train))
         X_train = X_train[indices]
         y_train = y_train[indices]
