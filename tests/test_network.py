@@ -5,7 +5,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import numpy as np
 from network import NeuralNetwork
 
-
 def test_output_shape():
     # network should return one probability per digit (10 total)
     net = NeuralNetwork([784, 128, 64, 10])
@@ -13,7 +12,6 @@ def test_output_shape():
     probs = net.forward(X)
     assert probs.shape == (5, 10), "output shape is wrong"
     print("test_output_shape passed")
-
 
 def test_probabilities_sum_to_one():
     # softmax output should always sum to 1
@@ -24,7 +22,6 @@ def test_probabilities_sum_to_one():
     assert np.allclose(sums, 1.0), "probabilities dont sum to 1"
     print("test_probabilities_sum_to_one passed")
 
-
 def test_predict_returns_valid_digit():
     # predicted digit should be between 0 and 9
     net = NeuralNetwork([784, 128, 64, 10])
@@ -32,7 +29,6 @@ def test_predict_returns_valid_digit():
     digits, probs = net.predict(X)
     assert 0 <= digits[0] <= 9, "predicted digit out of range"
     print("test_predict_returns_valid_digit passed")
-
 
 def test_save_and_load(tmp_path):
     # saved and loaded network should give same output
@@ -50,7 +46,6 @@ def test_save_and_load(tmp_path):
     assert np.allclose(probs_before, probs_after), "loaded model gives different output"
     print("test_save_and_load passed")
 
-
 def test_relu_zeros_negatives():
     # relu should turn negative numbers into 0
     net = NeuralNetwork([784, 10])
@@ -61,7 +56,6 @@ def test_relu_zeros_negatives():
     assert out[4] == 5.0, "relu should keep positives"
     print("test_relu_zeros_negatives passed")
 
-
 def test_relu_deriv():
     # derivative should be 1 for positive, 0 for negative
     net = NeuralNetwork([784, 10])
@@ -71,7 +65,6 @@ def test_relu_deriv():
     assert d[1] == 1.0
     assert d[2] == 1.0
     print("test_relu_deriv passed")
-
 
 def test_loss_goes_down_after_training():
     # after a few steps the loss should be lower than at the start
@@ -92,7 +85,6 @@ def test_loss_goes_down_after_training():
     assert loss_after < loss_before, "loss did not go down after training"
     print("test_loss_goes_down_after_training passed")
 
-
 def test_weights_change_after_backward():
     # weights should be different after one backward pass
     net = NeuralNetwork([784, 64, 10])
@@ -108,7 +100,6 @@ def test_weights_change_after_backward():
         assert not np.allclose(net.weights[i], weights_before[i]), f"weights[{i}] did not change"
     print("test_weights_change_after_backward passed")
 
-
 def test_single_image_prediction():
     # should work with a single flat image, same as what the app sends
     net = NeuralNetwork([784, 128, 64, 10])
@@ -117,7 +108,6 @@ def test_single_image_prediction():
     assert len(digits) == 1
     assert probs.shape == (1, 10)
     print("test_single_image_prediction passed")
-
 
 if __name__ == "__main__":
     test_output_shape()

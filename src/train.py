@@ -53,7 +53,6 @@ def load_dataset():
     y_test  = load_labels(FILES["test_labels"])   # 10000 labels
     return X_train, y_train, X_test, y_test
 
-
 def train():
     X_train, y_train, X_test, y_test = load_dataset()
 
@@ -98,7 +97,6 @@ def train():
     model_path = os.path.join(MODEL_DIR, "model")
     net.save(model_path)
     print(f"\nModel saved to {model_path}.npz")
-
 
 if __name__ == "__main__":
     train()
