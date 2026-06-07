@@ -6,7 +6,8 @@ from PIL import Image, ImageDraw, ImageTk
 from network import NeuralNetwork
 from camera import FingerTracker
 
-CANVAS_SIZE = 560 # Increase this for better camera resolution - might affect performance
+CANVAS_SIZE  = 560  # bigger = better camera quality, but slower
+BRUSH_RADIUS = 10   # I use 10 since MNIST lines are thin, 12 was too thick
 MODEL_PATH  = os.path.join(os.path.dirname(__file__), "..", "model", "model.npz")
 
 class App:
@@ -46,7 +47,7 @@ class App:
         self.root.bind("<c>", lambda e: self.clear())
 
     def on_draw(self, event):
-        r = 12
+        r = BRUSH_RADIUS
         x, y = event.x, event.y
         self.canvas.create_oval(x-r, y-r, x+r, y+r, fill="white", outline="white")
         self.drawer.ellipse([x-r, y-r, x+r, y+r], fill=255)
@@ -205,7 +206,7 @@ class App:
             y = int(pos[1] / cam_h * CANVAS_SIZE)
 
             if drawing and self.prev_pos is not None:
-                r = 12
+                r = BRUSH_RADIUS
                 px, py = self.prev_pos
                 # draw a line between previous and current position so strokes are not dotted
                 self.drawer.line([px, py, x, y], fill=255, width=r * 2)
