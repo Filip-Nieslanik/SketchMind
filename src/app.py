@@ -8,7 +8,7 @@ from camera import FingerTracker
 
 CANVAS_SIZE  = 560  # bigger = better camera quality, but slower
 BRUSH_RADIUS = 10   # I use 10 since MNIST lines are thin, 12 was too thick
-MODEL_PATH  = os.path.join(os.path.dirname(__file__), "..", "model", "model.npz")
+MODEL_PATH   = os.path.join(os.path.dirname(__file__), "..", "model", "model.npz")
 
 class App:
     def __init__(self, root):
@@ -19,14 +19,14 @@ class App:
         self.net = NeuralNetwork([784, 128, 64, 10])
         self.net.load(MODEL_PATH)
 
+        # PIL image stores what was drawn - I send this to the network, not the canvas
         self.image   = Image.new("L", (CANVAS_SIZE, CANVAS_SIZE), color=0)
         self.drawer  = ImageDraw.Draw(self.image)
 
-        # camera mode off by default
         self.camera_mode  = False
         self.tracker      = None
         self.prev_pos     = None
-        self.clear_timer  = None  # auto-clear timer
+        self.clear_timer  = None  # auto-clear after 2s of no drawing
 
         self.setup_canvas()
         self.setup_panel()
@@ -51,7 +51,7 @@ class App:
         x, y = event.x, event.y
         self.canvas.create_oval(x-r, y-r, x+r, y+r, fill="white", outline="white")
         self.drawer.ellipse([x-r, y-r, x+r, y+r], fill=255)
-        self.run_prediction()  # predict while drawing, not just after
+        self.run_prediction()
         self.schedule_clear()
 
     def setup_panel(self):
@@ -73,7 +73,6 @@ class App:
         )
         self.confidence_label.pack(pady=(0, 20))
 
-        # bar chart for each digit 0-9
         tk.Label(panel, text="Probabilities", font=("Arial", 11, "bold"),
                  bg="#1e1e1e", fg="white").pack(pady=(10, 4))
 
@@ -118,7 +117,7 @@ class App:
         self.run_prediction()
 
     def center_image(self, img):
-        # crop empty borders and center the digit like MNIST does
+        # MNIST digits are always centered, so I do the same before sending to the network
         pixels = np.array(img)
         rows   = np.any(pixels > 0, axis=1)
         cols   = np.any(pixels > 0, axis=0)
@@ -131,7 +130,7 @@ class App:
 
         cropped = img.crop((left, top, right + 1, bottom + 1))
 
-        # paste into a square with some padding
+        # scale and center into a 200x200 square with some padding
         result = Image.new("L", (200, 200), 0)
         scale  = min(160 / cropped.width, 160 / cropped.height)
         new_w  = int(cropped.width * scale)
@@ -143,10 +142,9 @@ class App:
         return result
 
     def schedule_clear(self):
-        # cancel previous timer if user is still drawing
+        # reset the timer on every stroke so it only clears after 2s of inactivity
         if self.clear_timer:
             self.root.after_cancel(self.clear_timer)
-        # clear canvas after 2 seconds of no drawing
         self.clear_timer = self.root.after(2000, self.clear)
 
     def run_prediction(self):
@@ -191,8 +189,8 @@ class App:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img       = Image.fromarray(frame_rgb).resize((CANVAS_SIZE, CANVAS_SIZE))
 
-            # draw strokes on top of camera frame
-            # self.image is grayscale mask of what was drawn
+            # overlay the drawn strokes on top of the camera feed
+            # I paste a white image using the stroke mask so strokes show up over the camera
             colored_strokes = Image.new("RGB", (CANVAS_SIZE, CANVAS_SIZE), (255, 255, 255))
             img.paste(colored_strokes, mask=self.image)
 
@@ -208,7 +206,7 @@ class App:
             if drawing and self.prev_pos is not None:
                 r = BRUSH_RADIUS
                 px, py = self.prev_pos
-                # draw a line between previous and current position so strokes are not dotted
+                # connect previous and current position so strokes are continuous
                 self.drawer.line([px, py, x, y], fill=255, width=r * 2)
                 self.drawer.ellipse([x-r, y-r, x+r, y+r], fill=255)
                 self.run_prediction()
@@ -224,7 +222,6 @@ class App:
         if self.tracker:
             self.tracker.release()
             self.tracker = None
-        # go back to plain black canvas
         self.canvas.delete("all")
 
     def clear(self):
