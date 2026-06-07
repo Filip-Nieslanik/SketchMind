@@ -42,6 +42,8 @@ class App:
 
         self.canvas.bind("<B1-Motion>", self.on_draw)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
+        # press C to clear without clicking the button
+        self.root.bind("<c>", lambda e: self.clear())
 
     def on_draw(self, event):
         r = 12
