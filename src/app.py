@@ -155,10 +155,10 @@ class App:
 
     def schedule_clear(self):
         # every stroke resets this timer
-        # if 2 seconds pass without any drawing, clear() is called automatically - might change this later, sometimes it is annoying
+        # if 10 seconds pass without any drawing, clear() is called automatically
         if self.clear_timer:
             self.root.after_cancel(self.clear_timer)
-        self.clear_timer = self.root.after(2000, self.clear)
+        self.clear_timer = self.root.after(10000, self.clear)
 
     def run_prediction(self):
         # prepares the drawing and runs it through the NN to get the predicted digit and confidence, then updates the panel with the results
