@@ -6,8 +6,8 @@ from PIL import Image, ImageDraw, ImageTk
 from network import NeuralNetwork
 from camera import FingerTracker
 
-CANVAS_SIZE  = 560  # bigger = better camera quality, but slower
-BRUSH_RADIUS = 10   # I use 10 since MNIST lines are thin, 12 was too thick
+CANVAS_SIZE  = 560  # bigger = better camera but slower
+BRUSH_RADIUS = 10   # NOTE: use 10 since MNIST lines are just too thin and 12 was too thick
 MODEL_PATH   = os.path.join(os.path.dirname(__file__), "..", "model", "model.npz")
 
 class App:
@@ -20,15 +20,15 @@ class App:
         self.net = NeuralNetwork([784, 128, 64, 10])
         self.net.load(MODEL_PATH)
 
-        # PIL image is the actual drawing data I send to the network
+        # PIL image is the actual drawing data that I send to the NN for prediction, it starts blank and I draw on it in on_draw() and update_camera()
         # the Tkinter canvas is just the visual layer the user sees
         self.image   = Image.new("L", (CANVAS_SIZE, CANVAS_SIZE), color=0)
         self.drawer  = ImageDraw.Draw(self.image)
 
-        self.camera_mode  = False  # toggled by the camera button
-        self.tracker      = None   # FingerTracker instance, only exists in camera mode
-        self.prev_pos     = None   # needed to draw lines between frames in camera mode
-        self.clear_timer  = None   # auto-clear after 2s of no drawing
+        self.camera_mode  = False  # toggled by the camera button we start at the False = OFF
+        self.tracker      = None   # FingerTracker instance it is linked to camera.py
+        self.prev_pos     = None   # needed to draw lines between frames again in camera.py
+        self.clear_timer  = None   # auto-clear variable, used in schedule_clear() and on_draw()
 
         self.setup_canvas()
         self.setup_panel()
@@ -43,9 +43,9 @@ class App:
         )
         self.canvas.grid(row=0, column=0, padx=10, pady=10)
 
-        self.canvas.bind("<B1-Motion>", self.on_draw)          # fires while holding left mouse button
-        self.canvas.bind("<ButtonRelease-1>", self.on_release)  # fires when mouse button is released
-        self.root.bind("<c>", lambda e: self.clear())           # press C to clear without clicking
+        self.canvas.bind("<B1-Motion>", self.on_draw)           # starts while holding left mouse button
+        self.canvas.bind("<ButtonRelease-1>", self.on_release)  # starts when mouse button is released
+        self.root.bind("<c>", lambda e: self.clear())           # if we press C we clear without clicking
 
     def on_draw(self, event):
         # called on every mouse move while drawing
@@ -58,21 +58,21 @@ class App:
         self.schedule_clear()   # reset the auto-clear timer
 
     def setup_panel(self):
-        # right side panel - prediction label, confidence, probability bars, buttons
+        # right side panel - we have there prediction label, confidence, probability bars, buttons...
         panel = tk.Frame(self.root, bg="#1e1e1e")
         panel.grid(row=0, column=1, padx=10, pady=10, sticky="n")
 
         tk.Label(panel, text="Prediction", font=("Arial", 16, "bold"),
                  bg="#1e1e1e", fg="white").pack(pady=(0, 5))
 
-        # big number showing what the network thinks was drawn
+        # big number showing what the network thinks was drawn // still working on how to make it more accurate and less jumpy while drawing
         self.prediction_label = tk.Label(
             panel, text="?", font=("Arial", 72, "bold"),
             bg="#1e1e1e", fg="#00ff88", width=3
         )
         self.prediction_label.pack()
 
-        # shows the confidence percentage, e.g. "87.3% sure"
+        # shows the confidence percentage for example "67.5% sure"
         self.confidence_label = tk.Label(
             panel, text="draw something",
             font=("Arial", 12), bg="#1e1e1e", fg="#aaaaaa"
@@ -107,6 +107,7 @@ class App:
             self.bars.append(bar)
             self.bar_labels.append(pct)
 
+        # camera toggle button - starts/stops the webcam and finger tracking in camera.py
         self.camera_btn = tk.Button(
             panel, text="Use Camera", font=("Arial", 12),
             command=self.toggle_camera, bg="#444444", fg="white",
@@ -120,13 +121,13 @@ class App:
             relief="flat", padx=10, pady=5
         ).pack()
 
+    # when the mouse button is released, we run one final prediction to update the panel with the finished drawing
     def on_release(self, event):
-        # run one final prediction when the mouse button is released
+        # run one final prediction when the mouse button is released, just to correct nonsense while drawing
         self.run_prediction()
 
     def center_image(self, img):
-        # MNIST digits are always centered and cropped tight
-        # I do the same here so my drawing looks like MNIST input
+        # MNIST digits are always centered and cropped to the bounding box of the strokes, so I do the same here
         # without this the network gets confused by empty space around the digit
         pixels = np.array(img)
         rows   = np.any(pixels > 0, axis=1)
@@ -154,18 +155,18 @@ class App:
 
     def schedule_clear(self):
         # every stroke resets this timer
-        # if 2 seconds pass without any drawing, clear() is called automatically
+        # if 2 seconds pass without any drawing, clear() is called automatically - might change this later, sometimes it is annoying
         if self.clear_timer:
             self.root.after_cancel(self.clear_timer)
         self.clear_timer = self.root.after(2000, self.clear)
 
     def run_prediction(self):
-        # prepares the drawing and runs it through the network
+        # prepares the drawing and runs it through the NN to get the predicted digit and confidence, then updates the panel with the results
         # called from on_draw(), on_release(), and update_camera()
         centered = self.center_image(self.image)
-        small    = centered.resize((28, 28), Image.LANCZOS)  # network expects 28x28
+        small    = centered.resize((28, 28), Image.LANCZOS)  # NN expects 28x28
         pixels   = np.array(small).flatten() / 255.0         # flatten to 784 values, scale to 0-1
-        pixels   = pixels.reshape(1, 784)                    # network expects shape (1, 784)
+        pixels   = pixels.reshape(1, 784)                    # NN expects shape (1, 784)
 
         digit, probs = self.net.predict(pixels)
         digit      = digit[0]
@@ -226,8 +227,8 @@ class App:
             if drawing and self.prev_pos is not None:
                 r = BRUSH_RADIUS
                 px, py = self.prev_pos
-                # draw a line from previous to current position so strokes are continuous
-                # without this I get dots instead of lines when moving fast
+                # connect the previous finger position to the current one so the stroke stays continuous
+                # finger tracking still jumps, so we also draw a dot at the current point for better coverage
                 self.drawer.line([px, py, x, y], fill=255, width=r * 2)
                 self.drawer.ellipse([x-r, y-r, x+r, y+r], fill=255)
                 self.run_prediction()
@@ -248,7 +249,7 @@ class App:
         self.canvas.delete("all")
 
     def clear(self):
-        # wipes everything - canvas, PIL image, prediction panel
+        # wipes everything - canvas, PIL image, prediction panel...
         self.canvas.delete("all")
         self.image  = Image.new("L", (CANVAS_SIZE, CANVAS_SIZE), color=0)
         self.drawer = ImageDraw.Draw(self.image)

@@ -12,7 +12,7 @@ MIDDLE_PIP = 10  # middle joint of middle finger
 
 class FingerTracker:
     def __init__(self):
-        self.cap = cv2.VideoCapture(0)  # 0 = first available camera, change to 1 or 2 if needed
+        self.cap = cv2.VideoCapture(0)  # use my default webcam; if we plug in another camera I can switch this to 1 or 2
 
         base_options = mp.tasks.BaseOptions(
             model_asset_path=self._get_model_path()
@@ -26,8 +26,8 @@ class FingerTracker:
         self.history = []  # stores last N positions for smoothing
 
     def _get_model_path(self):
-        # MediaPipe needs a .task model file to detect hands
-        # I download it automatically on first run so I don't have to ship it with the repo
+        # MediaPipe needs a .task model file to detect hands.
+        # I keep it out of the repo and download it automatically the first time the app runs.
         path = os.path.join(os.path.dirname(__file__), "hand_landmarker.task")
         if not os.path.exists(path):
             print("Downloading hand landmark model...")
@@ -38,16 +38,17 @@ class FingerTracker:
         return path
 
     def _index_finger_up(self, landmarks):
-        # in image coordinates y=0 is at the top
-        # so if the tip has a smaller y than the joint, the finger is pointing up
+        # image coordinates have y=0 at the top, so a lower y value means a point is higher in the frame.
+        # I use this to check if my index finger tip is raised above the middle joint.
         return landmarks[INDEX_TIP].y < landmarks[INDEX_PIP].y
 
     def _middle_finger_up(self, landmarks):
+        # same logic for the middle finger; I use this as a pause signal when drawing with the camera.
         return landmarks[MIDDLE_TIP].y < landmarks[MIDDLE_PIP].y
 
     def get_finger_pos(self):
-        # called every 30ms from update_camera() in app.py
-        # returns the current frame, finger position, and whether I'm in drawing mode
+        # called every 30ms from update_camera() in app.py.
+        # I return the current camera frame, the smoothed finger position, and whether I'm currently drawing.
         success, frame = self.cap.read()
         if not success:
             return None, None, False
@@ -68,8 +69,8 @@ class FingerTracker:
         x = int(tip.x * w)
         y = int(tip.y * h)
 
-        # keep the last 5 positions and use their average
-        # this removes the shakiness that comes from raw MediaPipe output
+        # keep the last 5 positions and average them.
+        # this smooths out the raw MediaPipe finger jitter so my cursor feels more stable.
         self.history.append((x, y))
         if len(self.history) > 5:
             self.history.pop(0)
@@ -77,8 +78,8 @@ class FingerTracker:
         avg_x = int(sum(p[0] for p in self.history) / len(self.history))
         avg_y = int(sum(p[1] for p in self.history) / len(self.history))
 
-        # drawing mode = index finger up AND middle finger down
-        # middle finger acts as a pause button - raise it to stop drawing
+        # I consider drawing active when my index finger is raised and my middle finger is lowered.
+        # The middle finger becomes a simple pause control: raise it to stop drawing without removing your hand.
         drawing = self._index_finger_up(landmarks) and not self._middle_finger_up(landmarks)
 
         # show visual feedback on the camera frame
