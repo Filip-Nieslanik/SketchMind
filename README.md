@@ -54,4 +54,4 @@ python src/app.py
 Click **Use Camera** and draw with your index finger.
 Raise your middle finger too if you just want to move without drawing.
 
-Canvas clears itself after 2 seconds of no drawing.
+Canvas clears itself after 10 seconds of no drawing.
